@@ -1,0 +1,17 @@
+---
+app:
+  app_name: main
+  log_level: Debug
+vault:
+  server: http://localhost:8200
+api:
+  schema: http
+  write_timeout: 30
+  read_timeout: 30
+  graceful_timeout: 15
+  idle_timeout: 60
+  host: localhost
+  listen_port: 8765
+  swagger: true
+  local_swagger: true
+  allowed_methods: ["GET","POST","PUT","HEAD","OPTIONS"]

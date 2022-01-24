@@ -1,0 +1,194 @@
+definitions:
+  nweapi.JSONResult:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+  vault.JSONResult:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+info:
+  contact:
+    email: admin@mail.ru
+    name: API Support
+    url: https://jira.url
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: https://sample.url
+paths:
+  /conf:
+    get:
+      consumes:
+      - application/json
+      description: Internal method
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+      summary: Show config for service
+      tags:
+      - internal
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Internal method
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nweapi.JSONResult'
+      summary: Health check
+      tags:
+      - internal
+  /vault/api/v1/getAllAppRolesToken:
+    get:
+      consumes:
+      - application/json
+      description: vault method getAllAppRolesToken
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+      summary: getAllAppRolesToken
+      tags:
+      - vault
+  /vault/api/v1/getAppRoleToken:
+    get:
+      consumes:
+      - application/json
+      description: vault method getAppRoleToken
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+      summary: getAppRoleToken
+      tags:
+      - vault
+  /vault/api/v1/getAppRoles:
+    get:
+      consumes:
+      - application/json
+      description: vault method getAppRoles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+      summary: getAppRoles
+      tags:
+      - vault
+  /vault/api/v1/getValidRolesForUser:
+    get:
+      consumes:
+      - application/json
+      description: vault method getValidRolesForUser
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/vault.JSONResult'
+      summary: getValidRolesForUser
+      tags:
+      - vault
+swagger: "2.0"
