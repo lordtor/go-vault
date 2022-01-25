@@ -1,4 +1,4 @@
-package vault
+package go_vault
 
 import (
 	"context"
@@ -104,12 +104,6 @@ func (v *Vault) SetAppRole(roleName string) (bool, error) {
 	path := fmt.Sprintf("/auth/token/roles/%s", roleName)
 	span.SetAttributes(attribute.Key("Path").String(path))
 	span.SetAttributes(attribute.Key("Role").String(roleName))
-	// if err := defaults.Set(v.Conf.Role); err != nil {
-	// 	Log.Error(err.Error())
-	// 	span.RecordError(err)
-	// 	span.SetStatus(1, "Vault.SetAppRole.Defaults")
-	// 	return false, err
-	// }
 	v.Conf.Role.RoleNme = roleName
 	v.Conf.Role.PathSuffix = v.Conf.User.Email
 	v.Conf.Role.AllowedEntityAliases = v.Conf.User.Email
@@ -262,7 +256,7 @@ func (a *API) Routes(conf VaultConfig) *mux.Router {
 	vaultSubRoute.HandleFunc("/getAppRoles", a.getAppRoles(conf)).Methods(http.MethodGet)
 	vaultSubRoute.HandleFunc("/getValidRolesForUser", a.getValidRolesForUser(conf)).Methods(http.MethodGet)
 	vaultSubRoute.HandleFunc("/getAllAppRolesToken", a.getAllAppRolesToken(conf)).Methods(http.MethodGet)
-	vaultSubRoute.HandleFunc("/getAppRoleToken", a.getAppRoleToken(conf)).Methods(http.MethodGet)
+	vaultSubRoute.HandleFunc("/getAppRoleToken", a.getAppRoleToken(conf)).Methods(http.MethodPost)
 	return r
 }
 
@@ -303,14 +297,18 @@ func (a *API) Resp(data *JSONResult, w http.ResponseWriter, ctx context.Context)
 // @Success 200 {object}  JSONResult "desc"
 // @Failure 400,404 {object} JSONResult
 // @Failure 500 {object} JSONResult
-// @Router /vault/api/v1/getAppRoleToken [get]
+// @Param q body VaultUser  true "VaultUser"
+// @Router /vault/api/v1/getAppRoleToken [post]
 func (a *API) getAppRoleToken(conf VaultConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conf.User = VaultUser{
-			UserName:    "Vasya",
-			Email:       "Vasya@mail.ru",
-			GroupeNames: []string{"vault_devops_rw", "vault_team_devp-test"},
-		}
+		q := VaultUser{}
+		_ = json.NewDecoder(r.Body).Decode(&q)
+		conf.User = q
+		// VaultUser{
+		// 	UserName:    "Vasya",
+		// 	Email:       "Vasya@mail.ru",
+		// 	GroupeNames: []string{"vault_devops_rw", "vault_team_devp-test"},
+		// }
 		Group := "vault_devops_rw"
 		tokens := map[string]string{}
 		conf.Role.Init()

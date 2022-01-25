@@ -1,5 +1,5 @@
 definitions:
-  nweapi.JSONResult:
+  api.JSONResult:
     properties:
       code:
         type: integer
@@ -36,23 +36,23 @@ paths:
         "200":
           description: desc
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
         "405":
           description: Method Not Allowed
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
       summary: Show config for service
       tags:
       - internal
@@ -67,19 +67,19 @@ paths:
         "200":
           description: desc
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/nweapi.JSONResult'
+            $ref: '#/definitions/api.JSONResult'
       summary: Health check
       tags:
       - internal

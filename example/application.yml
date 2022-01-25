@@ -1,7 +1,12 @@
 ---
 app:
-  app_name: main
+  app_name: sample_vault
+  profile_name: dev
   log_level: Debug
+trace:
+  jaeger_host: localhost
+  jaeger_port: "6831"
+  disabled: false
 vault:
   server: http://localhost:8200
 api:
@@ -11,7 +16,7 @@ api:
   graceful_timeout: 15
   idle_timeout: 60
   host: localhost
-  listen_port: 8765
+  listen_port: 8080
   swagger: true
   local_swagger: true
   allowed_methods: ["GET","POST","PUT","HEAD","OPTIONS"]

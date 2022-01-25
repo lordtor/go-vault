@@ -6,18 +6,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lordtor/go-base-api/api"
-
 	"github.com/imdario/mergo"
+	api "github.com/lordtor/go-base-api"
 	base_config "github.com/lordtor/go-basic-config"
 	logging "github.com/lordtor/go-logging"
-
+	trace "github.com/lordtor/go-trace-lib"
+	"github.com/lordtor/go-vault/vault"
 	"gopkg.in/yaml.v3"
 )
 
 type C struct {
 	base_config.ApplicationConfig `yaml:"app"`
-	API                           api.ApiServerConfig `yaml:"api"`
+	API                           api.ApiServerConfig  `yaml:"api"`
+	Vault                         vault.VaultConfig    `yaml:"vault"`
+	Trace                         trace.ProviderConfig `yaml:"trace"`
 }
 
 func (conf *C) GetParamsFromYml(path string) error {
@@ -121,22 +123,13 @@ func (conf *C) ParseCloudFile() {
 	conf.ConfServerURI = backupConfig.ConfServerURI
 }
 
-// func (conf *C) ReloadPassword() {
-// 	for k, v := range conf.Secrets {
-// 		if v != "" {
-// 			switch k {
-// 			case "vault_password":
-// 				conf.Camunda.Password = v
-// 			case "rabbit_password":
-// 				conf.Rabbit.Password = v
-// 			default:
-// 				for j, data := range conf.JenkinsSets {
-// 					if strings.Contains(k, j) {
-// 						data.Password = v
-// 						conf.JenkinsSets[j] = data
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+func (conf *C) ReloadPassword() {
+	for k, v := range conf.Secrets {
+		if v != "" {
+			switch k {
+			case "vault_password":
+				conf.Vault.Token = v
+			}
+		}
+	}
+}

@@ -15,14 +15,14 @@
 package main
 
 import (
-	"github.com/lordtor/go-vault/cmd/docs"
+	"github.com/lordtor/go-vault/example/docs"
 
 	"context"
 	"fmt"
 
-	ex "go-vault/internal/pkg/extend_config"
+	ex "github.com/lordtor/go-vault/example/internal/pkg/extend_config"
 
-	"github.com/lordtor/go-base-api/api"
+	api "github.com/lordtor/go-base-api"
 
 	trace "github.com/lordtor/go-trace-lib"
 	"github.com/lordtor/go-vault/vault"
@@ -32,12 +32,13 @@ import (
 )
 
 var (
-	Log             = logging.Log
-	Conf            = ex.C{}
-	binVersion      = "0.1.1"
-	aBuildNumber    = ""
+	Log  = logging.Log
+	Conf = ex.C{}
+	// Bootstrap local & bin version.
+	binVersion      = "0.1.2"
+	aBuildNumber    = "00000"
 	aBuildTimeStamp = ""
-	aGitBranch      = ""
+	aGitBranch      = "master"
 	aGitHash        = ""
 )
 
@@ -46,52 +47,36 @@ func init() {
 	version.InitVersion(binVersion, aBuildNumber, aBuildTimeStamp, aGitBranch, aGitHash)
 	Conf.ReloadConfig()
 	Conf.API.App = Conf.AppName
+	Conf.Trace.Environment = Conf.ProfileName
+	Conf.Trace.ServiceName = Conf.AppName
+	Conf.Trace.ServiceVersion = version.AppVersion.Version
 	Conf.API.InitializeApiServerConfig(Conf.API, Conf)
 	logging.ChangeLogLevel(Conf.LogLevel)
 	logging.Log.Error(Conf)
 }
 func main() {
 	ctx := context.Background()
+
 	if Conf.API.Swagger {
 		docs.SwaggerInfo.Title = fmt.Sprintf("Swagger  %s", Conf.AppName)
 		docs.SwaggerInfo.Version = version.GetVersion().Version
 		docs.SwaggerInfo.BasePath = fmt.Sprintf("/%s", Conf.AppName)
 		docs.SwaggerInfo.Description = "Basic only internal methods!"
 		docs.SwaggerInfo.Schemes = []string{Conf.API.Schema}
-		hostAPI := ""
-		if Conf.API.LocalSwagger {
-			hostAPI = fmt.Sprintf("%s:%d", Conf.API.Host, Conf.API.ListenPort)
-		} else {
-			hostAPI = Conf.API.Host
-		}
-		docs.SwaggerInfo.Host = hostAPI
+		docs.SwaggerInfo.Host = Conf.API.ApiHost
 	}
 	// Bootstrap tracer.
-	prv, err := trace.NewProvider(trace.ProviderConfig{
-		JaegerEndpoint: "",
-		JaegerHost:     "localhost",
-		JaegerPort:     "6831",
-		ServiceName:    "client",
-		ServiceVersion: "1.0.1",
-		Environment:    "dev",
-		Disabled:       false,
-	})
-	vaultConfig := vault.VaultConfig{Server: "http://localhost:8200",
-		Token: "vault-root-token",
-		User: vault.VaultUser{
-			UserName:    "Vasya",
-			Email:       "Vasya@mail.ru",
-			GroupeNames: []string{"vault_devops_rw", "vault_team_devp-test"},
-		}}
-
-	vaultAPI := vault.API{}
-
+	prv, err := trace.NewProvider(Conf.Trace)
 	if err != nil {
 		Log.Fatalln(err)
 	}
 	defer prv.Close(ctx)
+	// Bootstrap vault.
+	vaultAPI := vault.API{}
+	// Bootstrap api.
 	a := api.API{}
 	a.Initialize(Conf.API, Conf)
-	a.Mount(fmt.Sprintf("/%s/vault/", Conf.AppName), vaultAPI.Routes(vaultConfig))
+	// Mount vaul routes
+	a.Mount(fmt.Sprintf("/%s/vault/", Conf.AppName), vaultAPI.Routes(Conf.Vault))
 	a.Run()
 }
