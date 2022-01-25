@@ -11,7 +11,7 @@ import (
 	base_config "github.com/lordtor/go-basic-config"
 	logging "github.com/lordtor/go-logging"
 	trace "github.com/lordtor/go-trace-lib"
-	"github.com/lordtor/go-vault/vault"
+	vault "github.com/lordtor/go-vault"
 	"gopkg.in/yaml.v3"
 )
 

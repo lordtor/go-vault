@@ -250,14 +250,41 @@ type JSONResult struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-func (a *API) Routes(conf VaultConfig) *mux.Router {
-	r := mux.NewRouter()
-	vaultSubRoute := r.PathPrefix("/api/v1").Subrouter()
-	vaultSubRoute.HandleFunc("/getAppRoles", a.getAppRoles(conf)).Methods(http.MethodGet)
-	vaultSubRoute.HandleFunc("/getValidRolesForUser", a.getValidRolesForUser(conf)).Methods(http.MethodGet)
-	vaultSubRoute.HandleFunc("/getAllAppRolesToken", a.getAllAppRolesToken(conf)).Methods(http.MethodGet)
-	vaultSubRoute.HandleFunc("/getAppRoleToken", a.getAppRoleToken(conf)).Methods(http.MethodPost)
-	return r
+func (a *API) GetSingleToken(ctx context.Context, role string) (string, error) {
+	_, span := trace.NewSpan(ctx, "GetSingleToken", nil)
+	defer span.End()
+	span.SetStatus(2, "GetSingleToken")
+	_, err := a.Client.SetAppRole(role)
+	if err != nil {
+		Log.Error(err.Error())
+		span.RecordError(err)
+		span.SetStatus(1, err.Error())
+		return "", err
+	}
+	appRoleId, err := a.Client.GetAppRoleId(role)
+	if err != nil {
+		Log.Error(err.Error())
+		span.RecordError(err)
+		span.SetStatus(1, err.Error())
+		return "", err
+	}
+	span.SetAttributes(attribute.Key("RoleID").String(appRoleId))
+	appRoleSecretId, err := a.Client.GetAppRoleSecretId(role, appRoleId)
+	if err != nil {
+		Log.Error(err.Error())
+		span.RecordError(err)
+		span.SetStatus(1, err.Error())
+		return "", err
+	}
+	span.SetAttributes(attribute.Key("RoleSecretID").String(appRoleSecretId))
+	Token, err := a.Client.GetAppRoleToken(appRoleId, appRoleSecretId)
+	if err != nil {
+		Log.Error(err.Error())
+		span.RecordError(err)
+		span.SetStatus(1, err.Error())
+		return "", err
+	}
+	return Token, nil
 }
 
 func (a *API) Resp(data *JSONResult, w http.ResponseWriter, ctx context.Context) {
@@ -272,7 +299,6 @@ func (a *API) Resp(data *JSONResult, w http.ResponseWriter, ctx context.Context)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(data.Code)
 	span.SetAttributes(attribute.Key("Code").Int(data.Code))
 	span.SetAttributes(attribute.Key("Message").String(data.Message))
@@ -288,28 +314,35 @@ func (a *API) Resp(data *JSONResult, w http.ResponseWriter, ctx context.Context)
 
 }
 
+func (a *API) Routes(conf VaultConfig) *mux.Router {
+	r := mux.NewRouter()
+	vaultSubRoute := r.PathPrefix("/api/v1").Subrouter()
+	vaultSubRoute.HandleFunc("/getAppRoles", a.getAppRoles(conf)).Methods(http.MethodGet)
+	vaultSubRoute.HandleFunc("/getValidRolesForUser", a.getValidRolesForUser(conf)).Methods(http.MethodPost)
+	vaultSubRoute.HandleFunc("/getAllAppRolesToken", a.getAllAppRolesToken(conf)).Methods(http.MethodPut)
+	vaultSubRoute.HandleFunc("/getAppRoleToken", a.getAppRoleToken(conf)).Queries("group", "{group}").Methods(http.MethodPut)
+	return r
+}
+
 // getAppRoleToken godoc
-// @Summary getAppRoleToken
+// @Summary Generate user vault token for curent group
 // @Tags vault
-// @Description vault method getAppRoleToken
+// @Description Method generate user vault token for vlid vault approle by curent group
 // @Accept  json
 // @Produce  json
 // @Success 200 {object}  JSONResult "desc"
 // @Failure 400,404 {object} JSONResult
 // @Failure 500 {object} JSONResult
-// @Param q body VaultUser  true "VaultUser"
-// @Router /vault/api/v1/getAppRoleToken [post]
+// @Param user body VaultUser true "User info"
+// @Param group query string  true  "grope name for generate token"
+// @Router /vault/api/v1/getAppRoleToken [put]
 func (a *API) getAppRoleToken(conf VaultConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		q := VaultUser{}
-		_ = json.NewDecoder(r.Body).Decode(&q)
-		conf.User = q
-		// VaultUser{
-		// 	UserName:    "Vasya",
-		// 	Email:       "Vasya@mail.ru",
-		// 	GroupeNames: []string{"vault_devops_rw", "vault_team_devp-test"},
-		// }
-		Group := "vault_devops_rw"
+		user := VaultUser{}
+		_ = json.NewDecoder(r.Body).Decode(&user)
+		conf.User = user
+		Group := r.FormValue("group")
+
 		tokens := map[string]string{}
 		conf.Role.Init()
 		c, span := trace.NewSpan(r.Context(), "getAppRoleToken", nil)
@@ -377,22 +410,21 @@ func (a *API) getAppRoleToken(conf VaultConfig) http.HandlerFunc {
 }
 
 // getAllAppRolesToken godoc
-// @Summary getAllAppRolesToken
+// @Summary Generate all tokens for user
 // @Tags vault
-// @Description vault method getAllAppRolesToken
+// @Description Method generate all user vault token  for vlid vault approles by user groups
 // @Accept  json
 // @Produce  json
 // @Success 200 {object}  JSONResult "desc"
 // @Failure 400,404 {object} JSONResult
 // @Failure 500 {object} JSONResult
-// @Router /vault/api/v1/getAllAppRolesToken [get]
+// @Param user body VaultUser true "User info"
+// @Router /vault/api/v1/getAllAppRolesToken [put]
 func (a *API) getAllAppRolesToken(conf VaultConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conf.User = VaultUser{
-			UserName:    "Vasya",
-			Email:       "Vasya@mail.ru",
-			GroupeNames: []string{"vault_devops_rw", "vault_team_devp-test"},
-		}
+		user := VaultUser{}
+		_ = json.NewDecoder(r.Body).Decode(&user)
+		conf.User = user
 		tokens := map[string]string{}
 		conf.Role.Init()
 		c, span := trace.NewSpan(r.Context(), "getAllAppRolesToken", nil)
@@ -451,60 +483,22 @@ func (a *API) getAllAppRolesToken(conf VaultConfig) http.HandlerFunc {
 	}
 }
 
-func (a *API) GetSingleToken(ctx context.Context, role string) (string, error) {
-	_, span := trace.NewSpan(ctx, "GetSingleToken", nil)
-	defer span.End()
-	span.SetStatus(2, "GetSingleToken")
-	_, err := a.Client.SetAppRole(role)
-	if err != nil {
-		Log.Error(err.Error())
-		span.RecordError(err)
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-	appRoleId, err := a.Client.GetAppRoleId(role)
-	if err != nil {
-		Log.Error(err.Error())
-		span.RecordError(err)
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-	span.SetAttributes(attribute.Key("RoleID").String(appRoleId))
-	appRoleSecretId, err := a.Client.GetAppRoleSecretId(role, appRoleId)
-	if err != nil {
-		Log.Error(err.Error())
-		span.RecordError(err)
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-	span.SetAttributes(attribute.Key("RoleSecretID").String(appRoleSecretId))
-	Token, err := a.Client.GetAppRoleToken(appRoleId, appRoleSecretId)
-	if err != nil {
-		Log.Error(err.Error())
-		span.RecordError(err)
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-	return Token, nil
-}
-
 // getValidRolesForUser godoc
-// @Summary getValidRolesForUser
+// @Summary Get user approles
 // @Tags vault
-// @Description vault method getValidRolesForUser
+// @Description Method get all vlid vault approles for user
 // @Accept  json
 // @Produce  json
 // @Success 200 {object}  JSONResult "desc"
 // @Failure 400,404 {object} JSONResult
 // @Failure 500 {object} JSONResult
-// @Router /vault/api/v1/getValidRolesForUser [get]
+// @Param user body VaultUser true "User info"
+// @Router /vault/api/v1/getValidRolesForUser [post]
 func (a *API) getValidRolesForUser(conf VaultConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conf.User = VaultUser{
-			UserName:    "Vasya",
-			Email:       "Vasya@mail.ru",
-			GroupeNames: []string{"vault_devops_rw"},
-		}
+		user := VaultUser{}
+		_ = json.NewDecoder(r.Body).Decode(&user)
+		conf.User = user
 		c, span := trace.NewSpan(r.Context(), "getValidRolesForUser", nil)
 		defer span.End()
 		span.SetStatus(2, "getValidRolesForUser")
@@ -535,9 +529,9 @@ func (a *API) getValidRolesForUser(conf VaultConfig) http.HandlerFunc {
 }
 
 // getAppRoles godoc
-// @Summary getAppRoles
+// @Summary Get Vault AppRoles
 // @Tags vault
-// @Description vault method getAppRoles
+// @Description Method for get all existing vault approles
 // @Accept  json
 // @Produce  json
 // @Success 200 {object}  JSONResult "desc"

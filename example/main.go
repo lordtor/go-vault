@@ -25,7 +25,7 @@ import (
 	api "github.com/lordtor/go-base-api"
 
 	trace "github.com/lordtor/go-trace-lib"
-	"github.com/lordtor/go-vault/vault"
+	vault "github.com/lordtor/go-vault"
 
 	logging "github.com/lordtor/go-logging"
 	version "github.com/lordtor/go-version"
@@ -77,6 +77,7 @@ func main() {
 	a := api.API{}
 	a.Initialize(Conf.API, Conf)
 	// Mount vaul routes
+	logging.Log.Debug(Conf.Vault)
 	a.Mount(fmt.Sprintf("/%s/vault/", Conf.AppName), vaultAPI.Routes(Conf.Vault))
 	a.Run()
 }
